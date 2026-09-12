@@ -43,7 +43,7 @@ unrecognized client fingerprint — common at institutions to block custom
 VPN/tunnel clients that hide inside port 443.
 
 Separately, this network also requires a corporate HTTP proxy
-(`172.31.2.4:8080`) for general internet access — a second, independent
+(`YOUR_CORP_PROXY_IP:8080`) for general internet access — a second, independent
 requirement layered on top of the fingerprinting issue.
 
 ## 3. Every Earlier Attempt, and Why Each One Failed
@@ -77,7 +77,7 @@ Go binary (language_server_linux_x64)
   │                           │
 On college network:      On hotspot/home:
 → forwards to             → connects directly
-  172.31.2.4:8080            to the internet
+  YOUR_CORP_PROXY_IP:8080            to the internet
   (corp proxy)
 ```
 
@@ -97,9 +97,9 @@ binary's "suspicious" handshake never leaves the loopback interface.
    mitmdump's local CA cert.
 
 ### Network-aware switching (college proxy vs. hotspot)
-A wrapper script checks whether the corp proxy (`172.31.2.4:8080`) is reachable
+A wrapper script checks whether the corp proxy (`YOUR_CORP_PROXY_IP:8080`) is reachable
 before starting mitmdump each time:
-- **Reachable** → `mitmdump --mode upstream:http://172.31.2.4:8080 -p 8081`
+- **Reachable** → `mitmdump --mode upstream:http://YOUR_CORP_PROXY_IP:8080 -p 8081`
 - **Not reachable** → `mitmdump --mode regular -p 8081` (direct to internet)
 
 This runs as a `systemd --user` service so it's always active, auto-restarts if
@@ -149,7 +149,7 @@ it crashes, and re-evaluates the network on every restart.
 ## 7. How It Works Day-to-Day
 
 1. On login: `mitmdump-antigravity.service` and the tray icon both auto-start.
-2. The service checks if `172.31.2.4:8080` is reachable right now.
+2. The service checks if `YOUR_CORP_PROXY_IP:8080` is reachable right now.
    - Yes → mitmdump forwards through it (**college mode**)
    - No → mitmdump connects directly (**hotspot/home mode**)
 3. You launch Antigravity via `antigravity-launch` (or the tray menu's

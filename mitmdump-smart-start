@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CORP_PROXY_HOST="172.31.2.4"
+CORP_PROXY_HOST="YOUR_CORP_PROXY_IP"
 CORP_PROXY_PORT="8080"
 MODE_FILE="/tmp/mitmdump-mode.status"
 
