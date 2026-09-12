@@ -1,0 +1,4 @@
+#!/bin/bash
+if [ "$2" = "up" ]; then
+    su - aditya-pachauri -c "systemctl --user restart mitmdump-antigravity.service"
+fi

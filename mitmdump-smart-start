@@ -1,0 +1,15 @@
+#!/bin/bash
+
+CORP_PROXY_HOST="172.31.2.4"
+CORP_PROXY_PORT="8080"
+MODE_FILE="/tmp/mitmdump-mode.status"
+
+if timeout 2 bash -c "echo > /dev/tcp/$CORP_PROXY_HOST/$CORP_PROXY_PORT" 2>/dev/null; then
+    echo "college" > "$MODE_FILE"
+    echo "$(date): Corp proxy detected, routing through $CORP_PROXY_HOST:$CORP_PROXY_PORT" >> /tmp/mitmdump.log
+    exec mitmdump --mode upstream:http://$CORP_PROXY_HOST:$CORP_PROXY_PORT -p 8081
+else
+    echo "direct" > "$MODE_FILE"
+    echo "$(date): No corp proxy detected, routing directly to internet" >> /tmp/mitmdump.log
+    exec mitmdump --mode regular -p 8081
+fi

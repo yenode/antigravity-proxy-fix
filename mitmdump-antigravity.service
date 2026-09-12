@@ -1,0 +1,14 @@
+[Unit]
+Description=mitmdump TLS translator for Antigravity (auto-detects proxy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/mitmdump-smart-start
+Restart=always
+RestartSec=3
+StandardOutput=append:/tmp/mitmdump.log
+StandardError=append:/tmp/mitmdump.log
+
+[Install]
+WantedBy=default.target
