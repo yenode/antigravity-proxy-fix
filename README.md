@@ -232,7 +232,7 @@ sudo iptables -t nat -A OUTPUT -p tcp -d 142.251.0.0/16 --dport 443 -j REDIRECT 
 
 # 4. Save rules so they automatically load on every boot
 sudo netfilter-persistent save
-
+```
 ## 9. Quick Reference — Useful Commands
 
 ```bash
