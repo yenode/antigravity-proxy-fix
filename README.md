@@ -207,25 +207,27 @@ sudo apt-get update && sudo apt-get install -y iptables-persistent
 # 2. Save your currently active (and loop-safe) rules to /etc/iptables/rules.v4
 sudo netfilter-persistent save
 ```
-## 10. Raw IP Bypasses & The iptables Infinite Loop
+## 10. Raw IP Bypasses & The iptables REDIRECT
 
 **The Problem:**
 The Antigravity language server makes raw gRPC TCP connections directly to Google's public IP ranges (`172.217.x.x`, `142.250.x.x`, `142.251.x.x`) on port 443. Because these are low-level socket connections, they completely ignore standard `HTTP_PROXY` environment variables. Without `iptables` intercepting them, they hit the corporate firewall directly and silently time out.
 
-**The Infinite Loop Trap:**
-If you simply tell `iptables` to redirect all outbound port 443 traffic to `mitmdump` (port 8081), `mitmdump`'s *own* outbound traffic to Google gets caught in that same rule and redirected back to itself, causing an infinite routing loop. 
+**The UID Bypass Trap (What NOT to do):**
+It might seem logical to add a `RETURN` rule based on your User ID to prevent `mitmdump` from intercepting its own traffic and creating an infinite loop. **Do not do this.** The language server runs under the exact same UID as `mitmdump`. If you exempt your UID, the language server's traffic will also bypass the redirect and time out again. 
+
+Because `mitmdump` forwards its traffic to your corporate proxy on port `8080`, it naturally avoids our port `443` redirect rules anyway. There is no routing loop risk here.
 
 **The Fix:**
-We use `iptables` to transparently catch the raw Google IPs and send them to `mitmdump`, but we *first* insert an exception (`RETURN` rule) for the user running `mitmdump` so its traffic can escape. We also use `iptables-persistent` to ensure the fix survives a reboot.
+We use `iptables` to transparently catch *only* port 443 traffic destined for Google IPs and send it directly to `mitmdump`. We also use `iptables-persistent` to ensure the fix survives a reboot.
 
 ```bash
 # 1. Install persistent iptables helper
 sudo apt-get update && sudo apt-get install -y iptables-persistent
 
-# 2. Rule 1 (CRITICAL): Allow mitmdump traffic (owned by your UID) to bypass redirection to prevent loops
-sudo iptables -t nat -I OUTPUT 1 -m owner --uid-owner $(id -u) -p tcp -m multiport --dports 443,8081 -j RETURN
+# 2. Clear out any bad rules (if starting fresh or fixing a bad UID rule)
+sudo iptables -t nat -F OUTPUT
 
-# 3. Rules 2-4: Redirect raw outbound traffic to Google subnets into mitmdump (port 8081)
+# 3. Redirect raw outbound traffic to Google subnets into mitmdump (port 8081)
 sudo iptables -t nat -A OUTPUT -p tcp -d 172.217.0.0/16 --dport 443 -j REDIRECT --to-ports 8081
 sudo iptables -t nat -A OUTPUT -p tcp -d 142.250.0.0/15 --dport 443 -j REDIRECT --to-ports 8081
 sudo iptables -t nat -A OUTPUT -p tcp -d 142.251.0.0/16 --dport 443 -j REDIRECT --to-ports 8081
@@ -233,6 +235,7 @@ sudo iptables -t nat -A OUTPUT -p tcp -d 142.251.0.0/16 --dport 443 -j REDIRECT 
 # 4. Save rules so they automatically load on every boot
 sudo netfilter-persistent save
 ```
+
 ## 11. Quick Reference — Useful Commands
 
 ```bash
